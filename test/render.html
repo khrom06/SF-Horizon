@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8"><body><pre id="result">pending</pre>
+<script src="lib.js"></script><script src="../dist/sf-horizon.js"></script>
+<script>
+(async () => {
+  const { check, eq, state, hass, mount, text, q, done } = T, X = window.__sfHorizon;
+  const midnight = (dayOffset = 0) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + dayOffset); return d.getTime(); };
+  const at = (dayOffset, h, m = 0) => midnight(dayOffset) + (h * 60 + m) * 60e3;
+  // daily bell curve: 0 W outside 07:00–17:00, 3000 W peak at 12:00 (15-minute samples) for yesterday .. +3 days
+  const bell = (from, days) => { const o = {}; for (let d = from; d < from + days; d++) for (let i = 0; i < 96; i++) { const t = at(d, 0) + i * 900e3, h = i / 4, w = h > 7 && h < 17 ? 3000 * Math.sin(((h - 7) / 10) * Math.PI) : 0; o[new Date(t).toISOString()] = Math.round(w); } return o; };
+
+  // --- windows / tariff ---
+  eq(X.windows(["00:56-06:56", { start: "14:26", end: "16:26" }, "bad", "10:00-10:00", 5, null]), [{ from: 56, to: 416 }, { from: 866, to: 986 }], "windows parsed, invalid dropped");
+  const w = X.windows(["22:00-06:00"]);
+  check(X.offpeak(at(0, 23), w) && X.offpeak(at(0, 2), w) && !X.offpeak(at(0, 12), w), "window crossing midnight");
+  check(!X.offpeak(at(0, 6), w) && X.offpeak(at(0, 22), w), "end exclusive, start inclusive");
+
+  // --- series ---
+  const st = { a: state("sensor.a", 1, { watts: { "2026-01-01T10:00:00Z": 100, "2026-01-01T11:00:00Z": 300, junk: 5, "2026-01-01T12:00:00Z": "x" } }),
+               b: state("sensor.b", 1, { wh_period_15m: { "2026-01-01T13:00:00Z": 50 } }), c: state("sensor.c", 1, {}) };
+  const s = X.series(st, ["a", "b", "c", "missing"]);
+  eq(s.map((p) => p.w), [100, 300, 200], "merged: watts as is, Wh per 15 min x4, junk ignored");
+  eq(X.powerAt(s, Date.parse("2026-01-01T10:30:00Z")), 200, "linear interpolation"); eq(X.powerAt(s, Date.parse("2025-01-01T00:00:00Z")), 0, "outside data = 0");
+  eq(X.powerAt([{ t: 0, w: 100 }, { t: 5 * 3600e3, w: 100 }], 2.5 * 3600e3), 0, "gap longer than 3 h = unknown = 0");
+  eq(X.powerAt([], 5), 0, "empty series");
+
+  // --- best slot ---
+  const series = X.series({ f: { attributes: { watts: bell(0, 3) } } }, ["f"]);
+  let b = X.best(series, { now: at(0, 7), loadW: 2000, hours: 2, baselineW: 500, windows: [] });
+  check(b && b.start >= at(0, 10, 0) && b.start <= at(0, 11, 45), "2 h / 2 kW load fits the midday plateau (solar above load + baseline from ~10:10 to ~13:50): " + (b && new Date(b.start).toTimeString().slice(0, 5)));
+  check(b.coverage > 0.9, "near-full solar coverage at the peak: " + b.coverage);
+  b = X.best(series, { now: at(0, 7), loadW: 2000, hours: 30, baselineW: 500 }); eq(b, null, "a run longer than the horizon does not fit");
+  b = X.best(series, { now: at(0, 7), loadW: 0, hours: 2 }); eq(b, null, "zero load");
+  b = X.best(series, { now: at(0, 19), loadW: 2000, hours: 2, baselineW: 500 });
+  check(b && b.start >= at(1, 10, 0) && b.start <= at(1, 11, 45), "in the evening the best slot is tomorrow midday");
+  // no solar at all: cheapest window wins (off-peak), cost lower than peak
+  const night = X.best([], { now: at(0, 17), loadW: 2000, hours: 2, windows: X.windows(["00:56-06:56"]), peakPrice: 0.2, offpeakPrice: 0.1 });
+  check(night && X.offpeak(night.start + 1000, X.windows(["00:56-06:56"])) && Math.abs(night.cost - 0.4) < 1e-6, "without solar: cheapest slot is off-peak, cost 4 kWh x 0.10 = " + (night && night.cost));
+  // low solar, heavy baseline: no coverage anywhere -> falls back to the cheaper tariff
+  const dull = X.best(series, { now: at(0, 17), loadW: 2000, hours: 1, baselineW: 5000, windows: X.windows(["02:00-04:00"]), peakPrice: 0.3, offpeakPrice: 0.1 });
+  check(dull.coverage === 0 && dull.start >= at(1, 2) && dull.start < at(1, 4), "zero coverage everywhere -> cheapest tariff window");
+
+  // --- card ---
+  const hs = (extra = {}) => hass([state("sensor.fc", 5, { watts: bell(-1, 4), friendly_name: "FC" }), state("sensor.surplus", 1234)], extra);
+  let el = mount("sf-horizon-card", { forecast: "sensor.fc", offpeak: ["00:56-06:56"], peak_price: 0.17, offpeak_price: 0.14, surplus: "sensor.surplus", load_w: 2000, load_hours: 2 }, hs());
+  check(text(el).includes("Best start") && /\d\d:\d\d → \d\d:\d\d/.test(text(el)), "best start shown: " + text(el));
+  check(text(el).includes("% solar") && text(el).includes("€"), "coverage and cost shown"); check(text(el).includes("Surplus now: 1234 W"), "current surplus shown");
+  check(q(el, "svg.ch path").length === 2 && q(el, "svg.ch rect").length > 3, "chart drawn (area + line + strips + best slot)");
+  el = mount("sf-horizon-card", { forecast: "sensor.fc", loads: [{ name: "Dishwasher", power: 1200, hours: 2 }, { name: "EV", power: 3000, hours: 3 }] }, hs());
+  eq(q(el, ".pick button").length, 2, "load presets"); const before = text(el); q(el, '[data-act="load"][data-i="1"]')[0].click();
+  check(text(el) !== before && text(el).includes("3000 W × 3 h"), "preset switches the load: " + text(el));
+  el = mount("sf-horizon-card", { forecast: "sensor.missing", load_w: 1000, load_hours: 1 }, hs()); check(text(el).includes("No forecast data"), "no data message");
+  el = mount("sf-horizon-card", { forecast: "sensor.missing", offpeak: ["00:00-06:00"], load_w: 1000, load_hours: 1 }, hs()); check(text(el).includes("Cheapest start"), "tariff only: cheapest window offered");
+  let threw = false; try { mount("sf-horizon-card", { forecast: "sensor.fc", load_w: -5 }); } catch (e) { threw = true; } check(threw, "invalid load rejected");
+  el = mount("sf-horizon-card", { forecast: "sensor.fc", load_w: 1000, load_hours: 1, hours: 6 }, hs()); check(!text(el).includes("NaN") && !text(el).includes("undefined"), "no NaN / undefined in output");
+  el = mount("sf-horizon-card", { forecast: "sensor.fc", consumption: "sensor.surplus", load_w: 1000, load_hours: 1 }, hs()); check(text(el).includes("1234 W"), "live consumption used as the baseline");
+  el = mount("sf-horizon-card", { forecast: "sensor.fc", load_w: 1000, load_hours: 1, theme: "light" }, Object.assign(hs(), { language: "fr" })); eq(el.getAttribute("theme"), "light", "light theme"); check(text(el).includes("Meilleur départ"), "French");
+  done();
+})().catch((e) => { document.getElementById("result").textContent = JSON.stringify({ ok: false, checks: 0, failures: ["exception: " + e.message + " " + (e.stack || "").split("\n")[1]] }); });
+</script>

@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SF Horizon — live demo (fake data)</title>
+<style>body{margin:0;padding:24px;background:#0a1220;font-family:system-ui,sans-serif;color:#cfefff}
+h1{font:700 14px Orbitron,sans-serif;letter-spacing:.2em;color:#00e5ff} .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px;max-width:1100px}
+.l{background:#e9f1f8;padding:14px;border-radius:14px}</style>
+<h1>SF HORIZON · DEMO WITH FAKE DATA</h1><div class="g" id="g"></div>
+<script src="sf-horizon.js"></script>
+<script>
+const mid = (d) => { const x = new Date(); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() + d); return x.getTime(); };
+const bell = (from, days, peak) => { const o = {}; for (let d = from; d < from + days; d++) for (let i = 0; i < 96; i++) { const h = i / 4, w = h > 7.5 && h < 16.5 ? peak * Math.sin(((h - 7.5) / 9) * Math.PI) : 0; o[new Date(mid(d) + i * 900e3).toISOString()] = Math.round(w * (0.85 + 0.15 * Math.sin(i * 1.7))); } return o; };
+const st = (id, state, a = {}) => ({ entity_id: id, state: String(state), attributes: a, last_updated: new Date().toISOString(), last_changed: new Date().toISOString() });
+const hass = (dark) => ({ language: "en", themes: { darkMode: dark }, states: { "sensor.fc": st("sensor.fc", 1, { watts: bell(-1, 4, 3400) }), "sensor.surplus": st("sensor.surplus", 1850) } });
+const cfg = { forecast: "sensor.fc", offpeak: ["00:30-06:30", "14:00-16:00"], peak_price: 0.22, offpeak_price: 0.16, surplus: "sensor.surplus", baseline_w: 450,
+  loads: [{ name: "Dishwasher", power: 1200, hours: 2 }, { name: "EV 3 kW", power: 3000, hours: 3 }, { name: "Tumble dryer", power: 2400, hours: 1.5 }] };
+const mk = (c, light) => { const w = document.createElement("div"); if (light) w.className = "l"; const el = document.createElement("sf-horizon-card"); w.appendChild(el); el.setConfig(c); el.hass = hass(!light); document.getElementById("g").appendChild(w); };
+mk(cfg); mk({ ...cfg, theme: "light" }, true);
+</script></html>
