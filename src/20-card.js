@@ -7,6 +7,13 @@ const HZ_I18N = {
         nofit: "Der Lauf passt nicht in die nächsten {h} h", forecast: "Solarprognose", offpeak: "Niedertarif", load: "Last", now: "jetzt", cheap: "Günstigster Start" },
   es: { title: "Horizonte energético", best: "Mejor inicio", solar: "solar", grid: "de la red", nodata: "Sin previsión — solo la franja más barata", surplus: "Excedente ahora",
         nofit: "El ciclo no cabe en las próximas {h} h", forecast: "Previsión solar", offpeak: "Valle", load: "Carga", now: "ahora", cheap: "Inicio más barato" },
+  nl: {"title": "Energiehorizon", "best": "Beste starttijd", "solar": "zon", "grid": "van het net", "nodata": "Geen voorspelling — alleen het goedkoopste tijdvenster", "surplus": "Overschot nu", "nofit": "De cyclus past niet in de komende {h} u", "forecast": "Zonnevoorspelling", "offpeak": "Daluren", "load": "Belasting", "now": "nu", "cheap": "Goedkoopste start"},
+  it: {"title": "Orizzonte energetico", "best": "Miglior avvio", "solar": "solare", "grid": "dalla rete", "nodata": "Nessuna previsione — solo la fascia più economica", "surplus": "Surplus ora", "nofit": "Il ciclo non rientra nelle prossime {h} h", "forecast": "Previsione solare", "offpeak": "Fascia bassa", "load": "Carico", "now": "ora", "cheap": "Avvio più economico"},
+  pt: {"title": "Horizonte energético", "best": "Melhor início", "solar": "solar", "grid": "da rede", "nodata": "Sem previsão — apenas a janela mais barata", "surplus": "Excedente agora", "nofit": "O ciclo não cabe nas próximas {h} h", "forecast": "Previsão solar", "offpeak": "Vazio", "load": "Carga", "now": "agora", "cheap": "Início mais barato"},
+  pl: {"title": "Horyzont energii", "best": "Najlepszy start", "solar": "słońce", "grid": "z sieci", "nodata": "Brak prognozy — tylko najtańsze okno", "surplus": "Nadwyżka teraz", "nofit": "Cykl nie mieści się w najbliższych {h} h", "forecast": "Prognoza słoneczna", "offpeak": "Taryfa nocna", "load": "Obciążenie", "now": "teraz", "cheap": "Najtańszy start"},
+  ru: {"title": "Энергогоризонт", "best": "Лучшее время старта", "solar": "солнце", "grid": "из сети", "nodata": "Нет прогноза — только самое дешёвое окно", "surplus": "Избыток сейчас", "nofit": "Цикл не помещается в ближайшие {h} ч", "forecast": "Прогноз солнца", "offpeak": "Ночной тариф", "load": "Нагрузка", "now": "сейчас", "cheap": "Самый дешёвый старт"},
+  zh: {"title": "能源展望", "best": "最佳启动时间", "solar": "太阳能", "grid": "来自电网", "nodata": "无预测数据——仅显示最便宜的时段", "surplus": "当前盈余", "nofit": "该周期无法在未来 {h} 小时内完成", "forecast": "太阳能预测", "offpeak": "低谷电价", "load": "负载", "now": "现在", "cheap": "最便宜的启动时间"},
+  ar: {"title": "أفق الطاقة", "best": "أفضل وقت للبدء", "solar": "شمسي", "grid": "من الشبكة", "nodata": "لا توجد توقعات — يُعرض أرخص نطاق فقط", "surplus": "الفائض الآن", "nofit": "لا تتسع الدورة في الساعات {h} القادمة", "forecast": "التوقعات الشمسية", "offpeak": "الساعات المنخفضة التعرفة", "load": "الحِمل", "now": "الآن", "cheap": "أرخص وقت للبدء"},
 };
 const hzHm = (t) => { const d = new Date(t); return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); };
 
@@ -26,15 +33,15 @@ class SFHorizonCard extends SFCard {
     const st = this._hass ? this._hass.states : {}, c = this._cfg;
     return c.ids.map((id) => id + (st[id] ? st[id].last_updated : "-")).join("|") + "#" + (c.surplus && st[c.surplus] ? st[c.surplus].state : "") + "#" + (c.consumption && st[c.consumption] ? Math.round(sfNum(st[c.consumption].state, 0) / 100) : "") + "#" + this._sel + this._theme();
   }
-  title() { return this._cfg.title || sfT(HZ_I18N, sfLang(this._hass), "title"); }
+  title() { return this._cfg.title || sfT(HZ_I18N, this._lang(), "title"); }
   get css() { return `
     .pick { display:flex; flex-wrap:wrap; gap:6px; margin:-4px 0 10px; } .pick button { font-size:11px; padding:3px 10px; border-radius:20px; } .pick button.on { background:rgb(var(--sf-cyan-rgb) / .28); border-color:var(--sf-cyan); color:var(--sf-strong); }
     svg.ch { display:block; width:100%; height:auto; overflow:visible; } .ax { fill:var(--sf-dim); font-size:9px; } .gl { stroke:rgb(var(--sf-cyan-rgb) / .14); stroke-width:1; }
-    .big { margin-top:12px; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:baseline; } .big .v { font-family:Orbitron, ui-sans-serif, sans-serif; font-size:22px; color:var(--sf-green); letter-spacing:.05em; }
+    .big { margin-top:12px; display:flex; flex-wrap:wrap; gap:6px 18px; align-items:baseline; } .big .v { direction:ltr; unicode-bidi:isolate; font-family:Orbitron, ui-sans-serif, sans-serif; font-size:22px; color:var(--sf-green); letter-spacing:.05em; }
     .big .s { color:var(--sf-dim); } .big b { color:var(--sf-strong); font-weight:400; } .leg { display:flex; gap:14px; margin-top:8px; font-size:10.5px; color:var(--sf-dim); flex-wrap:wrap; }
     .sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px; }`; }
   body() {
-    const c = this._cfg, L = sfLang(this._hass), t = (k, v) => sfT(HZ_I18N, L, k, v), st = this._hass ? this._hass.states : {};
+    const c = this._cfg, L = this._lang(), t = (k, v) => sfT(HZ_I18N, L, k, v), st = this._hass ? this._hass.states : {};
     const now = Date.now(), series = hzSeries(st, c.ids), load = c.loads[Math.min(this._sel, c.loads.length - 1)], base = this._baseline();
     const best = hzBestSlot(series, { now, horizonH: c.horizon, loadW: load.power, hours: load.hours, baselineW: base, windows: c.windows, peakPrice: c.peak, offpeakPrice: c.off });
     const W = 560, H = 190, pl = 34, pr = 8, pt = 8, pb = 34, iw = W - pl - pr, ih = H - pt - pb, t0 = now, t1 = now + c.horizon * 3600e3;
@@ -63,11 +70,11 @@ class SFHorizonCard extends SFCard {
         + `<span class="s">${series.length ? `<b>${Math.round(best.coverage * 100)} %</b> ${sfEsc(t("solar"))} · ` : ""}<b>${best.gridKwh.toFixed(2)} kWh</b> ${sfEsc(t("grid"))}${money}</span></div>`;
     }
     const sur = c.surplus && st[c.surplus] ? sfNum(st[c.surplus].state) : NaN;
-    h += `<div class="leg"><span><i class="sw" style="background:var(--sf-cyan)"></i>${sfEsc(t("forecast"))}</span>${c.windows.length ? `<span><i class="sw" style="background:var(--sf-green)"></i>${sfEsc(t("offpeak"))}</span>` : ""}<span><i class="sw" style="background:var(--sf-amber)"></i>${Math.round(base)} W</span>`
-      + `<span>${sfEsc(t("load"))}: ${load.power} W × ${load.hours} h</span>${Number.isFinite(sur) ? `<span>${sfEsc(t("surplus"))}: <b>${Math.round(sur)} W</b></span>` : ""}</div>`;
+    h += `<div class="leg"><span><i class="sw" style="background:var(--sf-cyan)"></i>${sfEsc(t("forecast"))}</span>${c.windows.length ? `<span><i class="sw" style="background:var(--sf-green)"></i>${sfEsc(t("offpeak"))}</span>` : ""}<span><i class="sw" style="background:var(--sf-amber)"></i><bdi dir="ltr">${Math.round(base)} W</bdi></span>`
+      + `<span>${sfEsc(t("load"))}: <bdi dir="ltr">${load.power} W × ${load.hours} h</bdi></span>${Number.isFinite(sur) ? `<span>${sfEsc(t("surplus"))}: <b>${Math.round(sur)} W</b></span>` : ""}</div>`;
     return h;
   }
   onAct(el) { if (el.dataset.act === "load") { this._sel = +el.dataset.i || 0; this._sig = null; this._draw(); } }
 }
 sfRegister("sf-horizon-card", SFHorizonCard, "SF Horizon", "24-hour solar forecast with tariff windows and the best time to start a heavy appliance.");
-window.__sfHorizon = { windows: hzParseWindows, offpeak: hzIsOffpeak, series: hzSeries, powerAt: hzPowerAt, best: hzBestSlot };   // exposed for the test page only
+window.__sfHorizon = { i18n: HZ_I18N, windows: hzParseWindows, offpeak: hzIsOffpeak, series: hzSeries, powerAt: hzPowerAt, best: hzBestSlot };   // exposed for the test page only

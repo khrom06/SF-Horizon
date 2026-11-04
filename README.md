@@ -51,7 +51,7 @@ With no solar at all (winter nights) the ranking falls back to the cheapest tari
 
 The green rectangle on the chart is the proposed run; the green strip at the bottom marks off-peak time; the dashed line is the baseline.
 
-Languages: en, fr, de, es.
+Languages: en, fr, es, de, nl, it, pt, pl, ru, zh, ar (right-to-left for Arabic), the same eleven as SF Cards. The card follows the Home Assistant language; set `language: xx` on a card to force one.
 
 ## Safe by design
 
@@ -62,7 +62,7 @@ Languages: en, fr, de, es.
 ## Tests
 
 ```bash
-./test/run.sh   # build check + 28 render checks in headless Chrome (window parsing, series merge, interpolation, slot search, card)
+./test/run.sh   # build check + 329 render checks in headless Chrome (window parsing, series merge, interpolation, slot search, card)
 ```
 
 ---

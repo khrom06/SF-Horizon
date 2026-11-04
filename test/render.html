@@ -54,6 +54,11 @@
   el = mount("sf-horizon-card", { forecast: "sensor.fc", load_w: 1000, load_hours: 1, hours: 6 }, hs()); check(!text(el).includes("NaN") && !text(el).includes("undefined"), "no NaN / undefined in output");
   el = mount("sf-horizon-card", { forecast: "sensor.fc", consumption: "sensor.surplus", load_w: 1000, load_hours: 1 }, hs()); check(text(el).includes("1234 W"), "live consumption used as the baseline");
   el = mount("sf-horizon-card", { forecast: "sensor.fc", load_w: 1000, load_hours: 1, theme: "light" }, Object.assign(hs(), { language: "fr" })); eq(el.getAttribute("theme"), "light", "light theme"); check(text(el).includes("Meilleur départ"), "French");
+  T.i18n(X.i18n, "horizon");
+  for (const [lang, word] of [["ar", "أفق الطاقة"], ["zh", "能源展望"], ["ru", "Энергогоризонт"], ["nl", "Energiehorizon"], ["it", "Orizzonte energetico"], ["pt", "Horizonte energético"], ["pl", "Horyzont energii"]]) {
+    const e = mount("sf-horizon-card", { forecast: "sensor.fc", load_w: 1000, load_hours: 1, language: lang }, hs()); check(text(e).includes(word), "language option " + lang + ": " + text(e));
+    eq(e.getAttribute("dir"), lang === "ar" ? "rtl" : "ltr", "text direction for " + lang);
+  }
   done();
 })().catch((e) => { document.getElementById("result").textContent = JSON.stringify({ ok: false, checks: 0, failures: ["exception: " + e.message + " " + (e.stack || "").split("\n")[1]] }); });
 </script>
