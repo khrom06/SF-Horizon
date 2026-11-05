@@ -3,6 +3,7 @@
 **"When should I start the dishwasher?"** A Lovelace card that puts the next 24 hours of **solar forecast**, your **off-peak tariff windows** and your **house baseline** on one chart — and tells you the best time to start a heavy appliance.
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![Live demo](https://img.shields.io/badge/live-demo-00e5ff)](https://khrom06.github.io/SF-Horizon/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Add to HACS](https://img.shields.io/badge/HACS-add%20this%20repository-00e5ff)](https://my.home-assistant.io/redirect/hacs_repository/?owner=khrom06&repository=SF-Horizon&category=dashboard)
 
