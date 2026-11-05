@@ -15,8 +15,10 @@ Same HUD look as [SF Cards](https://github.com/khrom06/SF-Cards): the cards sit 
 
 ## Install
 
-1. HACS → ⋮ → *Custom repositories* → add `https://github.com/khrom06/SF-Horizon`, category **Dashboard**; install.
+1. HACS → search for **SF Horizon** → *Download*.
 2. Reload the browser (HACS registers the resource for you).
+
+Not listed yet in your HACS? Add it manually: HACS → ⋮ → *Custom repositories* → `https://github.com/khrom06/SF-Horizon`, category **Dashboard**, then install.
 
 You need a forecast sensor that exposes a `watts` attribute (a map of timestamp → watts), such as those of **Open-Meteo Solar Forecast** or **Forecast.Solar**. Sensors with a `wh_period_15m` attribute (Wh per 15 min) work too.
 
